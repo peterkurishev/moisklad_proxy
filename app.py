@@ -8,7 +8,7 @@ PROXIED_API = 'https://online.moysklad.ru'
 def index():
     return 'Flask is running!'
 
-@app.route('/<path:path>',methods=['GET','POST',”DELETE”])
+@app.route('/<path:path>',methods=['GET','POST','DELETE'])
 def proxy(path):
     global PROXIED_API
     if request.method=='GET':
@@ -26,7 +26,7 @@ def proxy(path):
     elif request.method=='DELETE':
         resp = requests.delete(f'{PROXIED_API}{path}').content
         response = Response(resp.content, resp.status_code, headers)
-         return response
+        return response
 
 if __name__ == '__main__':
     app.run(debug = False,port=80)
