@@ -1,0 +1,5 @@
+* TODO Add request / response logging
+* TODO Add authorization on proxy
+* TODO Add rights restriction (url / method) for proxy users
+* TODO Dockerized setup
+* TODO Add tests for the functionality via proxy
