@@ -1,5 +1,9 @@
-* TODO Add request / response logging
-* TODO Add authorization on proxy
-* TODO Add rights restriction (url / method) for proxy users
+* DONE Add request / response logging
+  CLOSED: [2020-11-19 Thu 21:47]
+* DONE Add authorization on proxy
+  CLOSED: [2020-11-19 Thu 21:47]
+* DONE Add rights restriction (url / method) for proxy users
+  CLOSED: [2020-11-19 Thu 21:47]
 * TODO Dockerized setup
 * TODO Add tests for the functionality via proxy
+* TODO Add token generation on proxy side
