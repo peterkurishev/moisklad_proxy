@@ -1,47 +1,82 @@
-'''Moi sklad proxy to control the permissions'''
-import requests
+"""Moi sklad proxy to control the permissions"""
 from base64 import b64encode
+
+import requests
 from flask import Flask, request, Response
 from flask_sqlalchemy import SQLAlchemy
-
 
 app = Flask(__name__)
 PROXIED_API = 'https://online.moysklad.ru/'
 MOYSKLAD_USER = 'admin@fdas'
 MOYSKLAD_PASSWORD = '3f5123262483'
-app.config ['SQLALCHEMY_DATABASE_URI'] = 'postgresql://peter:peter@localhost:5432/moisklad_proxy'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://peter:peter@localhost:5432/moisklad_proxy'
 db = SQLAlchemy(app)
 
+
 class UserAuth(db.Model):
-    id = db.Column(db.Integer, primary_key = True)
-    name = db.Column(db.String(100)) #  this names uses only for reference
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100))  # this names uses only for reference
     password_hash = db.Column(db.String(265))
 
-# class ProxyRequests(db.Model):
-#     id = db.Column(db.Integer, primary_key=True)
-#     user = db.Column(db.Integer, db.ForeignKey('userauth.id'), nullable=False)
 
-# class UserPermissions(db.Model):
-#     pass
+class LogItems(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user = db.Column(db.Integer, db.ForeignKey('user_auth.id'), nullable=False)
+    url = db.Column(db.String(1024))
+    method = db.Column(db.String(16))
+    request_headers = db.Column(db.Text)
+    response_headers = db.Column(db.Text)
+    request_body = db.Column(db.Text)
+    response_body = db.Column(db.Text)
+    response_status = db.Column(db.Integer)
 
-def encode_auth(user, password):
-    return b64encode(bytes("{}:{}".format(user, password), 'ascii')).decode('ascii')
+
+class UserPermissions(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user = db.Column(db.Integer, db.ForeignKey('user_auth.id'), nullable=False)
+    method = db.Column(db.String(16))
+    url_part = db.Column(db.String(255))
+    is_allowed = db.Column(db.Boolean)
+
+
+def calc_permissions(user, method, path):
+    disallow_permissions = UserPermissions.query.filter_by(user=user.id,
+                                                           method=method,
+                                                           is_allowed=False)
+    for perm in disallow_permissions:
+        if perm.url_part in path:
+            return False
+
+    allow_permissions = UserPermissions.query.filter_by(user=user.id,
+                                                        method=method,
+                                                        is_allowed=True)
+
+    for perm in allow_permissions:
+        if perm.url_part in path:
+            return True
+
+    return False
+
 
 @app.route('/')
 def index():
-    '''Index url credentials information'''
-    return 'MoySklad API proxy by Petr Kuryshev'
+    """Index url credentials information"""
+    return 'MoySklad API proxy by Petr Kuryshev <peter.kurishev@gmail.com>'
 
 
 @app.route('/<path:path>', methods=['GET', 'POST', 'DELETE'])
 def proxy(path):
-    '''Main proxying method'''
+    """Main proxying method"""
     response = None
+    user = None
     excluded_req_headers = ['host', 'authorization']
-    headers_dict = {name: value for (name,value) in request.headers.items()}
+    headers_dict = {name: value for (name, value) in request.headers.items()}
     if 'Authorization' in headers_dict:
         auth_type, auth_str = headers_dict['Authorization'].split(" ")
-        user = UserAuth.query.filter_by(password_hash=auth_str).first()
+        if auth_type == 'Basic':
+            user = UserAuth.query.filter_by(password_hash=auth_str).first()
+        elif auth_type == 'Bearer':
+            pass  # TODO: Bearer auth
         if user is None:
             error_resp = '{"errors":[{"error":"Ошибка аутентификации: Неправильный пароль или имя пользователя или ключ авторизации","code":1056,"moreInfo":"https://dev.moysklad.ru/doc/api/remap/1.2/#mojsklad-json-api-oshibki"}]}'
             return Response(error_resp, 401)
@@ -49,18 +84,26 @@ def proxy(path):
         # TODO: encode to JSON from dict
         error_resp = '{"errors":[{"error":"Ошибка аутентификации: Неправильный пароль или имя пользователя или ключ авторизации","code":1056,"moreInfo":"https://dev.moysklad.ru/doc/api/remap/1.2/#mojsklad-json-api-oshibki"}]}'
         return Response(error_resp, 401)
+
+    log_item = LogItems(user=user.id, request_headers=str(request.headers), request_body=str(request.get_json()))
+    log_item.method = request.method
+    log_item.url = path
+    db.session.add(log_item)
+    db.session.commit()
     req_headers = {name: value for (name, value) in request.headers if
                    name.lower() not in excluded_req_headers}
 
     req_headers['Authorization'] = 'Basic ' + \
-    b64encode(bytes("{}:{}".format(MOYSKLAD_USER, MOYSKLAD_PASSWORD),
-                    'ascii')).decode('ascii')
-    print(request)
+                                   b64encode(bytes("{}:{}".format(MOYSKLAD_USER, MOYSKLAD_PASSWORD),
+                                                   'ascii')).decode('ascii')
+
+    if not calc_permissions(user, request.method, path):
+        return Response('Request not allowed according to proxy rules', 401)
+
     if request.method == 'GET':
         resp = requests.get(f'{PROXIED_API}{path}', headers=req_headers)
         excluded_headers = ['content-encoding', 'content-length',
                             'transfer-encoding', 'connection']
-        print(resp.raw.headers.items())
         headers = [(name, value) for (name, value) in resp.raw.headers.items()
                    if name.lower() not in excluded_headers]
         response = Response(resp.content, resp.status_code, headers)
@@ -74,9 +117,15 @@ def proxy(path):
                    if name.lower() not in excluded_headers]
         response = Response(resp.content, resp.status_code, headers)
 
-    # elif request.method == 'DELETE':
-    #     resp = requests.delete(f'{PROXIED_API}{path}').content
-    #     response = Response(resp.content, resp.status_code, headers)
+    elif request.method == 'DELETE':
+        return Response("DELETE NOT SUPPORTED", 401)
+
+    log_item.response_status = resp.status_code
+    log_item.response_body = resp.content.decode('utf-8')
+    log_item.response_headers = str(resp.raw.headers.items())
+
+    db.session.add(log_item)
+    db.session.commit()
 
     return response
 
