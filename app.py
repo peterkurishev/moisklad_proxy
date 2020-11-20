@@ -11,7 +11,7 @@ app = Flask(__name__)
 PROXIED_API = 'https://online.moysklad.ru/'
 MOYSKLAD_USER = 'admin@fdas'
 MOYSKLAD_PASSWORD = '3f5123262483'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://peter:peter@localhost:5432/moisklad_proxy'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://moisklad:moisklad@localhost:5432/moisklad_proxy'
 app.config['FLASK_ADMIN_SWATCH'] = 'cerulean'
 app.config['SECRET_KEY'] = 'temchica88'
 db = SQLAlchemy(app)
@@ -39,7 +39,6 @@ class LogItems(db.Model):
     response_status = db.Column(db.Integer)
 
 
-
 class UserPermissions(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user = db.Column(db.Integer, db.ForeignKey('user_auth.id'), nullable=False)
@@ -55,7 +54,7 @@ class UserPermissions(db.Model):
         if self.user_rel:
             result += 'Allow '
         else:
-            result += 'Disallow'
+            result += 'Disallow '
 
         result += '{} on {}'.format(self.method, self.url_part)
 
@@ -173,4 +172,5 @@ def proxy(path):
 
 
 if __name__ == '__main__':
+    db.create_all()
     app.run(debug=False, port=8883)

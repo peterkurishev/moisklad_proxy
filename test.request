@@ -1,0 +1,12 @@
+# -*- restclient -*-
+#
+
+# Test get security token
+
+POST http://localhost:8883/api/remap/1.2/security/token
+Authorization: Basic test
+
+# Get conterparty
+
+GET http://localhost:8883/api/remap/1.1/entity/counterparty
+Authorization: Basic test
