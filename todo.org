@@ -1,3 +1,4 @@
 * TODO Dockerized setup
 * TODO Add tests for the functionality via proxy
 * TODO Add token generation on proxy side
+* TODO Add admin interface to view data and config 

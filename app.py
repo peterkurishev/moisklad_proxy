@@ -3,6 +3,8 @@ from base64 import b64encode
 
 import requests
 from flask import Flask, request, Response
+from flask_admin import Admin
+from flask_admin.contrib.sqla import ModelView
 from flask_sqlalchemy import SQLAlchemy
 
 app = Flask(__name__)
@@ -10,13 +12,19 @@ PROXIED_API = 'https://online.moysklad.ru/'
 MOYSKLAD_USER = 'admin@fdas'
 MOYSKLAD_PASSWORD = '3f5123262483'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://peter:peter@localhost:5432/moisklad_proxy'
+app.config['FLASK_ADMIN_SWATCH'] = 'cerulean'
+app.config['SECRET_KEY'] = 'temchica88'
 db = SQLAlchemy(app)
+admin = Admin(app, name='MoiSklad API Proxy', template_mode='bootstrap4')
 
 
 class UserAuth(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100))  # this names uses only for reference
     password_hash = db.Column(db.String(265))
+
+    def __str__(self):
+        return self.name
 
 
 class LogItems(db.Model):
@@ -31,12 +39,51 @@ class LogItems(db.Model):
     response_status = db.Column(db.Integer)
 
 
+
 class UserPermissions(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user = db.Column(db.Integer, db.ForeignKey('user_auth.id'), nullable=False)
     method = db.Column(db.String(16))
     url_part = db.Column(db.String(255))
     is_allowed = db.Column(db.Boolean)
+    user_rel = db.relationship(UserAuth, foreign_keys=[user],
+                               backref='Permissions')
+
+    def __str__(self):
+        result = ''
+
+        if self.user_rel:
+            result += 'Allow '
+        else:
+            result += 'Disallow'
+
+        result += '{} on {}'.format(self.method, self.url_part)
+
+        return result
+
+
+class LogView(ModelView):
+    can_view_details = True
+    can_create = False
+    can_edit = False
+    can_delete = False
+    can_export = True
+    column_display_pk = True
+    column_list = ['id', 'user', 'url', 'method', 'response_status']
+
+class UserView(ModelView):
+    column_list = ['id', 'name', 'password_hash']
+
+    def is_accessible(self):
+        return login.current_user.is_authenticated
+
+    def inaccessible_callback(self, name, **kwargs):
+        # redirect to login page if user doesn't have access
+        return redirect(url_for('login', next=request.url))
+
+admin.add_view(UserView(UserAuth, db.session))
+admin.add_view(LogView(LogItems, db.session))
+admin.add_view(ModelView(UserPermissions, db.session))
 
 
 def calc_permissions(user, method, path):
@@ -85,7 +132,8 @@ def proxy(path):
         error_resp = '{"errors":[{"error":"Ошибка аутентификации: Неправильный пароль или имя пользователя или ключ авторизации","code":1056,"moreInfo":"https://dev.moysklad.ru/doc/api/remap/1.2/#mojsklad-json-api-oshibki"}]}'
         return Response(error_resp, 401)
 
-    log_item = LogItems(user=user.id, request_headers=str(request.headers), request_body=str(request.get_json()))
+    log_item = LogItems(user=user.id, request_headers=str(
+        request.headers), request_body=str(request.get_json()))
     log_item.method = request.method
     log_item.url = path
     db.session.add(log_item)
