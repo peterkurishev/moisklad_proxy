@@ -19,7 +19,7 @@ description you can find at https://www.moysklad.ru/.
 
 The MIT License (MIT)
 
-Copyright (c) 2020 John Doe
+Copyright (c) 2020 Petr Kuryshev
 
 Permission is hereby granted, free of charge, to any person obtaining
 a copy of this software and associated documentation files (the
