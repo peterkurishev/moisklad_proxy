@@ -11,7 +11,8 @@ app = Flask(__name__)
 PROXIED_API = 'https://online.moysklad.ru/'
 MOYSKLAD_USER = 'admin@fdas'
 MOYSKLAD_PASSWORD = '3f5123262483'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://moisklad:moisklad@localhost:5432/moisklad_proxy'
+app.config[
+    'SQLALCHEMY_DATABASE_URI'] = 'postgresql://moisklad:moisklad@localhost:5432/moisklad_proxy'
 app.config['FLASK_ADMIN_SWATCH'] = 'cerulean'
 app.config['SECRET_KEY'] = 'temchica88'
 db = SQLAlchemy(app)
@@ -45,7 +46,8 @@ class UserPermissions(db.Model):
     method = db.Column(db.String(16))
     url_part = db.Column(db.String(255))
     is_allowed = db.Column(db.Boolean)
-    user_rel = db.relationship(UserAuth, foreign_keys=[user],
+    user_rel = db.relationship(UserAuth,
+                               foreign_keys=[user],
                                backref='Permissions')
 
     def __str__(self):
@@ -69,6 +71,7 @@ class LogView(ModelView):
     can_export = True
     column_display_pk = True
     column_list = ['id', 'user', 'url', 'method', 'response_status']
+
 
 class UserView(ModelView):
     column_list = ['id', 'name', 'password_hash']
@@ -125,14 +128,18 @@ def proxy(path):
         error_resp = '{"errors":[{"error":"Ошибка аутентификации: Неправильный пароль или имя пользователя или ключ авторизации","code":1056,"moreInfo":"https://dev.moysklad.ru/doc/api/remap/1.2/#mojsklad-json-api-oshibki"}]}'
         return Response(error_resp, 401)
 
-    log_item = LogItems(user=user.id, request_headers=str(
-        request.headers), request_body=str(request.get_json()))
+    log_item = LogItems(user=user.id,
+                        request_headers=str(request.headers),
+                        request_body=str(request.get_json()))
     log_item.method = request.method
     log_item.url = path
     db.session.add(log_item)
     db.session.commit()
-    req_headers = {name: value for (name, value) in request.headers if
-                   name.lower() not in excluded_req_headers}
+    req_headers = {
+        name: value
+        for (name, value) in request.headers
+        if name.lower() not in excluded_req_headers
+    }
 
     req_headers['Authorization'] = 'Basic ' + \
                                    b64encode(bytes("{}:{}".format(MOYSKLAD_USER, MOYSKLAD_PASSWORD),
@@ -143,17 +150,22 @@ def proxy(path):
 
     if request.method == 'GET':
         resp = requests.get(f'{PROXIED_API}{path}', headers=req_headers)
-        excluded_headers = ['content-encoding', 'content-length',
-                            'transfer-encoding', 'connection']
+        excluded_headers = [
+            'content-encoding', 'content-length', 'transfer-encoding',
+            'connection'
+        ]
         headers = [(name, value) for (name, value) in resp.raw.headers.items()
                    if name.lower() not in excluded_headers]
         response = Response(resp.content, resp.status_code, headers)
 
     elif request.method == 'POST':
-        resp = requests.post(f'{PROXIED_API}{path}', json=request.get_json(),
+        resp = requests.post(f'{PROXIED_API}{path}',
+                             json=request.get_json(),
                              headers=req_headers)
-        excluded_headers = ['content-encoding', 'content-length',
-                            'transfer-encoding', 'connection']
+        excluded_headers = [
+            'content-encoding', 'content-length', 'transfer-encoding',
+            'connection'
+        ]
         headers = [(name, value) for (name, value) in resp.raw.headers.items()
                    if name.lower() not in excluded_headers]
         response = Response(resp.content, resp.status_code, headers)
