@@ -4,7 +4,7 @@
 # Test get security token
 
 POST http://localhost:8883/api/remap/1.2/security/token
-Authorization: Basic test2
+Authorization: Basic test
 
 # Get conterparty
 
@@ -17,3 +17,17 @@ POST https://moisklad.vsdg.ru/api/remap/1.2/security/token
 Authorization: Basic YWRtaW5AZmRhczozZjUxMjMyNjI0ODM=
 
 {"test": "test"}
+
+# Test post with body
+POST http://localhost:8883/api/remap/1.2/entity/customerorder
+Authorization: Basic test
+Content-Type: application/json;charset=utf-8
+
+{"name": "WPM-85818", "organization": {"meta": {"href": "https://online.moysklad.ru/api/remap/1.2/entity/organization/04186266-1902-11eb-0a80-09a60008925a", "metadataHref": "https://online.moysklad.ru/api/remap/1.2/entity/organization/metadata", "type": "organization", "mediaType": "application/json", "uuidHref": "https://online.moysklad.ru/app/#mycompany/edit?id=04186266-1902-11eb-0a80-09a60008925a"}}, "description": "Посмотреть заказ на сайте: https://mymilt.ru/wp-admin/post.php?post=85818&action=edit\n---\nПримечание Клиента к Заказу:\nПВЗ OZON ул. Михаила Дудина, д.25 к.2\n---\nМетод доставки: Забрать в ПВЗ\n---\nТелефон: +7(921) 576-4887\n---\nМетод оплаты: Наличными при получении", "positions": [{"quantity": 1, "price": 950000, "discount": 0, "vat": 0, "assortment": {"meta": {"href": "https://online.moysklad.ru/api/remap/1.2/entity/product/", "type": "product", "mediaType": "application/json"}}, "reserve": 1}], "moment": "2020-12-21 14:10:17", "agent": {"meta": {"href": "https://online.moysklad.ru/api/remap/1.2/entity/counterparty/022d91f1-3b19-11eb-0a80-08330014796f", "metadataHref": "https://online.moysklad.ru/api/remap/1.2/entity/counterparty/metadata", "type": "counterparty", "mediaType": "application/json", "uuidHref": "https://online.moysklad.ru/app/#company/edit?id=022d91f1-3b19-11eb-0a80-08330014796f"}}}
+
+# Assortment
+
+GET http://localhost:8883/api/remap/1.2/entity/assortment?filter=id=60c6af46-1906-11eb-0a80-040c00299bf1
+Authorization: Basic test
+
+#

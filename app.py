@@ -1,5 +1,6 @@
 """Moi sklad proxy to control the permissions"""
 import os
+import json
 from base64 import b64encode
 
 import requests
@@ -9,7 +10,8 @@ from flask_admin.contrib.sqla import ModelView
 from flask_sqlalchemy import SQLAlchemy
 
 app = Flask(__name__)
-PROXIED_API = 'https://online.moysklad.ru/'
+PROXIED_HOST = 'online.moysklad.ru' # TODO: to config
+PROXIED_API = 'https://{}/'.format(PROXIED_HOST)
 PROXY_HOST = "moisklad.vsdg.ru" # TODO: to config
 MOYSKLAD_USER = 'admin@fdas' # TODO: to config
 MOYSKLAD_PASSWORD = '3f5123262483' # TODO: to config
@@ -155,7 +157,7 @@ def proxy(path):
     if request.method == 'GET':
         resp = requests.get(f'{PROXIED_API}{path}', headers=req_headers)
         content = resp.content.decode('utf-8')
-        content = content.replace('online.moysklad.ru', PROXY_HOST)
+        content = content.replace(PROXIED_HOST, PROXY_HOST)
         excluded_headers = ['content-encoding', 'content-length',
                             'transfer-encoding', 'connection']
         headers = [(name, value) for (name, value) in resp.raw.headers.items()
@@ -163,8 +165,9 @@ def proxy(path):
         response = Response(bytes(content, 'utf-8'), resp.status_code, headers)
 
     elif request.method == 'POST':
-        req_data = str(request.get_json())
-        req_data = req_data.replace(PROXY_HOST, 'online.moysklad.ru')
+        req_data = json.loads(request.data.replace(bytes(PROXY_HOST, 'utf-8'),
+                                                   bytes(PROXIED_HOST, 'utf-8')
+                                                   ).decode('utf-8'))
 
         resp = requests.post(f'{PROXIED_API}{path}', json=req_data,
                              headers=req_headers)
