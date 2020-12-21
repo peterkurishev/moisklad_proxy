@@ -132,10 +132,9 @@ def proxy(path):
         # TODO: encode to JSON from dict
         error_resp = '{"errors":[{"error":"Ошибка аутентификации: Неправильный пароль или имя пользователя или ключ авторизации","code":1056,"moreInfo":"https://dev.moysklad.ru/doc/api/remap/1.2/#mojsklad-json-api-oshibki"}]}'
         return Response(error_resp, 401)
-
     log_item = LogItems(user=user.id,
                         request_headers=str(request.headers),
-                        request_body=str(request.get_json()))
+                        request_body=str(request.get_json() if request.get_json(silent=True) is not None else None))
     log_item.method = request.method
     log_item.url = path
     db.session.add(log_item)
