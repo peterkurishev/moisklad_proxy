@@ -9,8 +9,9 @@ from flask_sqlalchemy import SQLAlchemy
 
 app = Flask(__name__)
 PROXIED_API = 'https://online.moysklad.ru/'
-MOYSKLAD_USER = 'admin@fdas'
-MOYSKLAD_PASSWORD = '3f5123262483'
+PROXY_HOST = "moisklad.vsdg.ru" # TODO: to config
+MOYSKLAD_USER = 'admin@fdas' # TODO: to config
+MOYSKLAD_PASSWORD = '3f5123262483' # TODO: to config
 app.config[
     'SQLALCHEMY_DATABASE_URI'] = 'postgresql://moisklad:moisklad@localhost:5432/moisklad_proxy'
 app.config['FLASK_ADMIN_SWATCH'] = 'cerulean'
@@ -64,6 +65,7 @@ class UserPermissions(db.Model):
 
 
 class LogView(ModelView):
+    """View for admin interface to list log entries"""
     can_view_details = True
     can_create = False
     can_edit = False
@@ -104,13 +106,15 @@ def calc_permissions(user, method, path):
 @app.route('/')
 def index():
     """Index url credentials information"""
-    return 'MoySklad API proxy by Petr Kuryshev <peter.kurishev@gmail.com>'
+    return 'MoySklad API proxy by Petr Kuryshev <peter.kurishev@gmail.com>' + \
+        ' https://github.com/peterkurishev/moisklad_proxy'
 
 
 @app.route('/<path:path>', methods=['GET', 'POST', 'DELETE'])
 def proxy(path):
     """Main proxying method"""
     response = None
+    resp = None
     user = None
     excluded_req_headers = ['host', 'authorization']
     headers_dict = {name: value for (name, value) in request.headers.items()}
@@ -150,32 +154,35 @@ def proxy(path):
 
     if request.method == 'GET':
         resp = requests.get(f'{PROXIED_API}{path}', headers=req_headers)
-        excluded_headers = [
-            'content-encoding', 'content-length', 'transfer-encoding',
-            'connection'
-        ]
+        content = resp.content.decode('utf-8')
+        content = content.replace('online.moysklad.ru', PROXY_HOST)
+        excluded_headers = ['content-encoding', 'content-length',
+                            'transfer-encoding', 'connection']
         headers = [(name, value) for (name, value) in resp.raw.headers.items()
                    if name.lower() not in excluded_headers]
-        response = Response(resp.content, resp.status_code, headers)
+        response = Response(bytes(content, 'utf-8'), resp.status_code, headers)
 
     elif request.method == 'POST':
-        resp = requests.post(f'{PROXIED_API}{path}',
-                             json=request.get_json(),
+        req_data = str(request.get_json())
+        req_data = req_data.replace(PROXY_HOST, 'online.moysklad.ru')
+
+        resp = requests.post(f'{PROXIED_API}{path}', json=req_data,
                              headers=req_headers)
-        excluded_headers = [
-            'content-encoding', 'content-length', 'transfer-encoding',
-            'connection'
-        ]
+        excluded_headers = ['content-encoding', 'content-length',
+                                'transfer-encoding', 'connection']
         headers = [(name, value) for (name, value) in resp.raw.headers.items()
                    if name.lower() not in excluded_headers]
-        response = Response(resp.content, resp.status_code, headers)
+        resp_content = resp.content.decode('utf-8')
+        resp_content = resp_content.replace('online.moysklad.ru', PROXY_HOST)
+        response = Response(bytes(resp_content, 'utf-8'), resp.status_code, headers)
 
     elif request.method == 'DELETE':
         return Response("DELETE NOT SUPPORTED", 401)
 
-    log_item.response_status = resp.status_code
-    log_item.response_body = resp.content.decode('utf-8')
-    log_item.response_headers = str(resp.raw.headers.items())
+    if resp is not None:
+        log_item.response_status = resp.status_code
+        log_item.response_body = resp.content.decode('utf-8')
+        log_item.response_headers = str(resp.raw.headers.items())
 
     db.session.add(log_item)
     db.session.commit()
@@ -184,5 +191,4 @@ def proxy(path):
 
 
 if __name__ == '__main__':
-    db.create_all()
     app.run(debug=False, port=8883)
