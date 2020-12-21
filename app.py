@@ -184,8 +184,8 @@ def proxy(path):
         log_item.response_body = resp.content.decode('utf-8')
         log_item.response_headers = str(resp.raw.headers.items())
 
-    db.session.add(log_item)
-    db.session.commit()
+        db.session.add(log_item)
+        db.session.commit()
 
     return response
 
