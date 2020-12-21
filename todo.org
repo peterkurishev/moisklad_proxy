@@ -3,3 +3,4 @@
 * TODO Add token generation on proxy side
 * TODO Add admin interface to view data and config 
 * TODO ENV configuration
+* TODO Add timestamp to LogItem

@@ -4,9 +4,16 @@
 # Test get security token
 
 POST http://localhost:8883/api/remap/1.2/security/token
-Authorization: Basic test
+Authorization: Basic test2
 
 # Get conterparty
 
 GET http://localhost:8883/api/remap/1.1/entity/counterparty
 Authorization: Basic test
+
+# Get token server
+
+POST https://moisklad.vsdg.ru/api/remap/1.2/security/token
+Authorization: Basic YWRtaW5AZmRhczozZjUxMjMyNjI0ODM=
+
+{"test": "test"}

@@ -1,4 +1,5 @@
 """Moi sklad proxy to control the permissions"""
+import os
 from base64 import b64encode
 
 import requests
@@ -13,9 +14,9 @@ PROXY_HOST = "moisklad.vsdg.ru" # TODO: to config
 MOYSKLAD_USER = 'admin@fdas' # TODO: to config
 MOYSKLAD_PASSWORD = '3f5123262483' # TODO: to config
 app.config[
-    'SQLALCHEMY_DATABASE_URI'] = 'postgresql://moisklad:moisklad@localhost:5432/moisklad_proxy'
+    'SQLALCHEMY_DATABASE_URI'] = os.environ.get("DATABASE_URI",
+                                                default='postgresql://moisklad:moisklad@localhost:5432/moisklad_proxy')
 app.config['FLASK_ADMIN_SWATCH'] = 'cerulean'
-app.config['SECRET_KEY'] = 'temchica88'
 db = SQLAlchemy(app)
 admin = Admin(app, name='MoiSklad API Proxy', template_mode='bootstrap4')
 
