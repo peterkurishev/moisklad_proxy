@@ -3,6 +3,7 @@ import os
 import json
 from base64 import b64encode
 
+import secrets
 import requests
 from flask import Flask, request, Response
 from flask_admin import Admin
@@ -10,15 +11,16 @@ from flask_admin.contrib.sqla import ModelView
 from flask_sqlalchemy import SQLAlchemy
 
 app = Flask(__name__)
-PROXIED_HOST = 'online.moysklad.ru' # TODO: to config
+PROXIED_HOST = os.environ.get("PROXIED_HOST", default="online.moysklad.ru")
 PROXIED_API = 'https://{}/'.format(PROXIED_HOST)
-PROXY_HOST = "moisklad.vsdg.ru" # TODO: to config
-MOYSKLAD_USER = 'admin@fdas' # TODO: to config
-MOYSKLAD_PASSWORD = '3f5123262483' # TODO: to config
+PROXY_HOST = os.environ.get("PROXY_HOST", default="moisklad.vsdg.ru")
+MOYSKLAD_USER = os.environ.get("MOYSKLAD_USER", default="user")
+MOYSKLAD_PASSWORD = os.environ.get("MOYSKLAD_PASSWORD", default="password")
 app.config[
     'SQLALCHEMY_DATABASE_URI'] = os.environ.get("DATABASE_URI",
                                                 default='postgresql://moisklad:moisklad@localhost:5432/moisklad_proxy')
 app.config['FLASK_ADMIN_SWATCH'] = 'cerulean'
+app.config['SECRET_KEY'] = secrets.token_urlsafe(16)
 db = SQLAlchemy(app)
 admin = Admin(app, name='MoiSklad API Proxy', template_mode='bootstrap4')
 
