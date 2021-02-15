@@ -16,8 +16,9 @@ PROXIED_API = 'https://{}/'.format(PROXIED_HOST)
 PROXY_HOST = os.environ.get("PROXY_HOST", default="moisklad.vsdg.ru")
 MOYSKLAD_USER = os.environ.get("MOYSKLAD_USER", default="user")
 MOYSKLAD_PASSWORD = os.environ.get("MOYSKLAD_PASSWORD", default="password")
+ONLY_FLAGGED_PRODUCTS = 'filter=https://online.moysklad.ru/api/remap/1.2/entity/product/metadata/attributes/ccade007-6f68-11eb-0a80-0771002843d1=true'
 app.config[
-    'SQLALCHEMY_DATABASE_URI'] = os.environ.get("DATABASE_URI",
+    'SQLALCHEMY_DATABASE_URI'] = os.environ.get("DATABASE_URL",
                                                 default='postgresql://moisklad:moisklad@localhost:5432/moisklad_proxy')
 app.config['FLASK_ADMIN_SWATCH'] = 'cerulean'
 app.config['SECRET_KEY'] = secrets.token_urlsafe(16)
@@ -157,7 +158,8 @@ def proxy(path):
         return Response('Request not allowed according to proxy rules', 401)
 
     if request.method == 'GET':
-        resp = requests.get(f'{PROXIED_API}{path}', headers=req_headers)
+        resp = requests.get(f'{PROXIED_API}{path}&{ONLY_FLAGGED_PRODUCTS}',
+                            headers=req_headers)
         content = resp.content.decode('utf-8')
         content = content.replace(PROXIED_HOST, PROXY_HOST)
         excluded_headers = ['content-encoding', 'content-length',
