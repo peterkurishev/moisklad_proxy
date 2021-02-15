@@ -22,9 +22,6 @@ flask-admin
 flask-sqlalchemy==2.4.4
 flask==1.1.2
 idna==2.10
-ipython-genutils==0.2.0
-ipython==7.19.0
-isort==5.6.4
 itsdangerous==1.1.0
 jedi==0.17.2
 jinja2==2.11.2
@@ -36,7 +33,7 @@ pexpect==4.8.0
 pickleshare==0.7.5
 pipenv-to-requirements
 prompt-toolkit==3.0.8
-psycopg2
+psycopg2-binary==2.8.6
 ptyprocess==0.6.0
 pycodestyle==2.6.0
 pygments==2.7.2
@@ -49,3 +46,5 @@ urllib3==1.26.2
 wcwidth==0.2.5
 werkzeug==1.0.1
 wrapt==1.12.1
+gunicorn==20.0.4
+requests==2.25.0
