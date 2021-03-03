@@ -30,6 +30,7 @@ class UserAuth(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100))  # this names uses only for reference
     password_hash = db.Column(db.String(265))
+    access_token = db.Column(db.String(265))
 
     def __str__(self):
         return self.name
@@ -150,15 +151,24 @@ def proxy(path):
         if name.lower() not in excluded_req_headers
     }
 
-    req_headers['Authorization'] = 'Basic ' + \
-                                   b64encode(bytes("{}:{}".format(MOYSKLAD_USER, MOYSKLAD_PASSWORD),
-                                                   'ascii')).decode('ascii')
-
+    if user.access_token != None and len(user.access_token) > 0:
+        # Use token for auth
+        req_headers['Authorization'] = 'Bearer {}'.format(user.access_token)
+    else:
+        req_headers['Authorization'] = 'Basic ' + \
+        b64encode(bytes("{}:{}".format(MOYSKLAD_USER, MOYSKLAD_PASSWORD),
+                        'ascii')).decode('ascii')
+    
     if not calc_permissions(user, request.method, path):
         return Response('Request not allowed according to proxy rules', 401)
 
     if request.method == 'GET':
-        resp = requests.get(f'{PROXIED_API}{path}&{ONLY_FLAGGED_PRODUCTS}',
+        resp = None
+        if 'entity/product?' in path:
+            resp = requests.get(f'{PROXIED_API}{path}&{ONLY_FLAGGED_PRODUCTS}',
+                            headers=req_headers)
+        else:
+            resp = requests.get(f'{PROXIED_API}{path}',
                             headers=req_headers)
         content = resp.content.decode('utf-8')
         content = content.replace(PROXIED_HOST, PROXY_HOST)
