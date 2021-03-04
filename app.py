@@ -142,7 +142,7 @@ def proxy(path):
                         request_headers=str(request.headers),
                         request_body=str(request.get_json() if request.get_json(silent=True) is not None else None))
     log_item.method = request.method
-    log_item.url = path
+    log_item.url = request.full_path
     db.session.add(log_item)
     db.session.commit()
     req_headers = {
@@ -164,11 +164,11 @@ def proxy(path):
 
     if request.method == 'GET':
         resp = None
-        if 'entity/product?' in path:
-            resp = requests.get(f'{PROXIED_API}{path}&{ONLY_FLAGGED_PRODUCTS}',
+        if '/entity/product' in path:
+            resp = requests.get(f'{PROXIED_API}{path}?{request.query_string}',
                             headers=req_headers)
         else:
-            resp = requests.get(f'{PROXIED_API}{path}',
+            resp = requests.get(f'{PROXIED_API}{path}?{request.query_string}',
                             headers=req_headers)
         content = resp.content.decode('utf-8')
         content = content.replace(PROXIED_HOST, PROXY_HOST)
