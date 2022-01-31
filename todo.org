@@ -1,0 +1,8 @@
+* DONE [#C] Dockerized setup
+* TODO [#B] Add tests for the functionality via proxy
+* TODO [#B] Add token generation on proxy side
+* DONE Add admin interface to view data and config
+* DONE ENV configuration
+* TODO [#A] Add timestamp to LogItem
+* TODO [#A] Redirect app links to moysklad or convert them on return
+Example: https://moisklad.vsdg.ru/app/#customerorder/edit?id=609e34ac-4561-11eb-0a80-03e7002f9e80
